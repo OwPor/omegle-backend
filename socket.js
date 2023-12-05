@@ -1,4 +1,4 @@
-const { addUser, removeUser, getUser, getUsers, addUnpairedUsers, getUnPairedUsers } = require("./users")
+const { addUser, removeUser, getUser, getUsers, addUnpairedUser, getUnPairedUsers } = require("./users")
 
 module.exports = function (server) {
     const io = require("socket.io")(server, {
@@ -20,13 +20,13 @@ module.exports = function (server) {
             callback()
         });
 
-        socket.on("pairing-user", (userId) => {
-            const { error } = addUnpairedUsers(userId)
+        socket.on("pairing-user", (userId, callback) => {
+            const { error } = addUnpairedUser(userId)
             if (error) return callback(error)
             const unPairedUsers = getUnPairedUsers()
             if (unPairedUsers.length < 2) return
-            const { user } = getUser(userId)
-            const { user: user2 } = getUser(unPairedUsers[0].userId)
+            const user = getUser(userId)
+            const user2 = getUser(unPairedUsers[0])
             io.to(user.socketId).emit("user-paired", user2.userId)
             io.to(user2.socketId).emit("user-paired", user.userId)
         })

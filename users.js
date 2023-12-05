@@ -1,12 +1,15 @@
 let onlineUsers = [];
-let unPairedUsers = []
-let pairedUsers = []
+let unPairedUsers = [];
 
 const addUser = (userId, socketId) => {
     const existingUser = onlineUsers.find(user => user.userId === userId)
+    const existingUser_ = onlineUsers.find(user => user.socketId === socketId)
 
     if (existingUser) {
         return { error: "Userid is taken" }
+    }
+    if (existingUser_) {
+        removeUser(socketId)
     }
 
     const user = { userId, socketId }
@@ -15,7 +18,7 @@ const addUser = (userId, socketId) => {
     return { user }
 }
 
-const addUnpairedUsers = (userId) => {
+const addUnpairedUser = (userId) => {
     const existingUser = unPairedUsers.find(user => user === userId)
 
     if (existingUser) {
@@ -24,7 +27,7 @@ const addUnpairedUsers = (userId) => {
 
     unPairedUsers.push(userId)
 
-    return { user }
+    return { userId }
 }
 
 const removeUser = (socketId) => {
@@ -33,12 +36,12 @@ const removeUser = (socketId) => {
     onlineUsers = filteredOnlineUsers
 }
 
-const getUser = (receiver) => onlineUsers.find(user => user.userId === receiver)
+const getUser = (userId) => onlineUsers.find(user => user.userId === userId)
 
 const getUsers = () => onlineUsers
 
 const getUnPairedUsers = () => unPairedUsers
 
 module.exports = {
-    getUser, removeUser, addUser, getUsers, addUnpairedUsers, getUnPairedUsers
+    getUser, removeUser, addUser, getUsers, addUnpairedUser, getUnPairedUsers
 }
