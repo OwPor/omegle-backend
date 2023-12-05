@@ -26,18 +26,25 @@ module.exports = function (server) {
             const unPairedUsers = getUnPairedUsers()
             if (unPairedUsers.length < 2) return
             const user = getUser(userId)
+            console.log(unPairedUsers)
             const user2 = getUser(unPairedUsers[0])
             io.to(user.socketId).emit("user-paired", user2.userId)
             io.to(user2.socketId).emit("user-paired", user.userId)
         })
 
-        socket.on("send-message", (sender, receiver, message, createdAt, callback) => {
+        socket.on("send-message", (receiver, message, callback) => {
             const user = getUser(receiver)
             if (!user) {
                 return callback()
             }
             console.log(user, message)
-            io.to(user.socketId).emit("send-message", sender, message, createdAt)
+            io.to(user.socketId).emit("send-message", message)
+            callback()
+        })
+
+        socket.on("chat-close", (receiver, callback) => {
+            const user = getUser(receiver)
+            io.to(user.socketId).emit("chat-close")
             callback()
         })
 
