@@ -37,7 +37,6 @@ module.exports = function (server) {
             if (!user) {
                 return callback()
             }
-            console.log(user, message)
             io.to(user.socketId).emit("send-message", message)
             callback()
         })
@@ -47,6 +46,20 @@ module.exports = function (server) {
             io.to(user.socketId).emit("chat-close")
             callback()
         })
+
+        socket.on("typing", (userId) => {
+            const user = getUser(userId)
+            io.to(user.socketId).emit("typing")
+        })
+
+        socket.on("screen-off", () => {
+            // remove user from online users list
+            const user = removeUser(socket.id)
+            // reset online users list
+            const onlineUsers = getUsers()
+            io.emit("get-online-users", onlineUsers);
+        })
+
 
         socket.on("offline", () => {
             // remove user from online users list
