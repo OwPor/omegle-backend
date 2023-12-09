@@ -52,6 +52,11 @@ module.exports = function (server) {
             io.to(user.socketId).emit("typing")
         })
 
+        socket.on("typing stop", (userId) => {
+            const user = getUser(userId)
+            io.to(user.socketId).emit("typing stop")
+        })
+
         socket.on("screen-off", () => {
             // remove user from online users list
             const user = removeUser(socket.id)
