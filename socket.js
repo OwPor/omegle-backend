@@ -38,6 +38,7 @@ module.exports = function (server) {
                 return callback()
             }
             io.to(user.socketId).emit("send-message", message)
+            io.to(socket.id).emit("receive-message", message)
             callback()
         })
 
