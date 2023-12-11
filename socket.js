@@ -32,6 +32,10 @@ module.exports = function (server) {
             removeUnpairedUser(user.userId)
         })
 
+        socket.on("unpairing-user", (userId) => {
+            removeUnpairedUser(userId)
+        })
+
         socket.on("send-message", (receiver, message, callback) => {
             const user = getUser(receiver)
             if (!user) {
@@ -65,7 +69,6 @@ module.exports = function (server) {
             const onlineUsers = getUsers()
             io.emit("get-online-users", onlineUsers);
         })
-
 
         socket.on("offline", () => {
             // remove user from online users list
