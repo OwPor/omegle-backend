@@ -31,11 +31,12 @@ const addUnpairedUser = (userId) => {
 }
 
 const removeUser = (socketId) => {
+    const allOnlineUsers = [...onlineUsers]
     const filteredOnlineUsers = onlineUsers.filter(user => user.socketId !== socketId)
 
     onlineUsers = filteredOnlineUsers
 
-    return onlineUsers.find((user) => user.socketId === socketId)
+    return allOnlineUsers.find((user) => user.socketId === socketId)
 }
 
 const removeUnpairedUser = (userId) => {
