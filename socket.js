@@ -65,6 +65,7 @@ module.exports = function (server) {
         socket.on("screen-off", () => {
             // remove user from online users list
             const user = removeUser(socket.id)
+            removeUnpairedUser(user.userId)
             // reset online users list
             const onlineUsers = getUsers()
             io.emit("get-online-users", onlineUsers);
@@ -73,6 +74,7 @@ module.exports = function (server) {
         socket.on("offline", () => {
             // remove user from online users list
             const user = removeUser(socket.id)
+            removeUnpairedUser(user.userId)
             // reset online users list
             const onlineUsers = getUsers()
             io.emit("get-online-users", onlineUsers);
@@ -81,6 +83,7 @@ module.exports = function (server) {
         socket.on("disconnect", () => {
             // remove user from online users list
             const user = removeUser(socket.id)
+            removeUnpairedUser(user.userId)
             const onlineUsers = getUsers()
             // reset online users list
             io.emit("get-online-users", onlineUsers);
