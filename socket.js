@@ -32,8 +32,9 @@ module.exports = function (server) {
             removeUnpairedUser(user.userId)
         })
 
-        socket.on("unpairing-user", (userId) => {
+        socket.on("unpairing-user", (userId, callback) => {
             removeUnpairedUser(userId)
+            callback()
         })
 
         socket.on("send-message", (receiver, message, callback) => {
