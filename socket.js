@@ -60,6 +60,10 @@ module.exports = function (server) {
         socket.on("typing", (userId) => {
             const user = getUser(userId);
             if (!user || !user.socketId) {
+                io.to(socket.id).emit("user-disconnected", {
+                    message: "The other user has disconnected",
+                    userId: userId
+                });
                 console.log(`User not found or invalid socketId for userId: ${userId}`);
                 return;
             }
@@ -69,6 +73,10 @@ module.exports = function (server) {
         socket.on("typing stop", (userId) => {
             const user = getUser(userId);
             if (!user || !user.socketId) {
+                io.to(socket.id).emit("user-disconnected", {
+                    message: "The other user has disconnected",
+                    userId: userId
+                });
                 console.log(`User not found or invalid socketId for userId: ${userId}`);
                 return;
             }
