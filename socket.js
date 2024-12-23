@@ -52,33 +52,14 @@ module.exports = function (server) {
         })
 
         socket.on("chat-close", (receiver, callback) => {
-            try {
-                const user = getUser(receiver);
-                
-                if (!user || !user.socketId) {
-                    io.to(socket.id).emit("user-disconnected", {
-                        message: "The other user has disconnected",
-                        userId: receiver
-                    });
-                    console.log(`User not found or invalid socketId for userId: ${receiver}`);
-                    return callback && callback();
-                }
-                
-                io.to(user.socketId).emit("chat-close");
-                callback && callback();
-            } catch (error) {
-                console.error('Error in chat-close handler:', error);
-                callback && callback(error);
-            }
-        });
+            const user = getUser(receiver)
+            io.to(user.socketId).emit("chat-close")
+            callback()
+        })
 
         socket.on("typing", (userId) => {
             const user = getUser(userId);
             if (!user || !user.socketId) {
-                io.to(socket.id).emit("user-disconnected", {
-                    message: "The other user has disconnected",
-                    userId: userId
-                });
                 console.log(`User not found or invalid socketId for userId: ${userId}`);
                 return;
             }
@@ -88,10 +69,6 @@ module.exports = function (server) {
         socket.on("typing stop", (userId) => {
             const user = getUser(userId);
             if (!user || !user.socketId) {
-                io.to(socket.id).emit("user-disconnected", {
-                    message: "The other user has disconnected",
-                    userId: userId
-                });
                 console.log(`User not found or invalid socketId for userId: ${userId}`);
                 return;
             }
@@ -99,54 +76,21 @@ module.exports = function (server) {
         });
 
         socket.on("screen-off", () => {
-            try {
-                const user = removeUser(socket.id);
-                
-                if (user) {
-                    removeUnpairedUser(user.userId);
-                    
-                    // Notify any active chat partners
-                    const onlineUsers = getUsers();
-                    onlineUsers.forEach(onlineUser => {
-                        io.to(onlineUser.socketId).emit("user-disconnected", {
-                            message: "Your chat partner has disconnected",
-                            userId: user.userId
-                        });
-                    });
-                }
-        
-                // reset online users list
-                const onlineUsers = getUsers();
-                io.emit("get-online-users", onlineUsers);
-            } catch (error) {
-                console.error('Error in screen-off handler:', error);
-            }
-        });
-        
-        // Similarly, update the "offline" event handler
+            // remove user from online users list
+            const user = removeUser(socket.id)
+            removeUnpairedUser(user.userId)
+            // reset online users list
+            const onlineUsers = getUsers()
+            io.emit("get-online-users", onlineUsers);
+        })
+
         socket.on("offline", () => {
-            try {
-                const user = removeUser(socket.id);
-                
-                if (user) {
-                    removeUnpairedUser(user.userId);
-                    
-                    // Notify any active chat partners
-                    const onlineUsers = getUsers();
-                    onlineUsers.forEach(onlineUser => {
-                        io.to(onlineUser.socketId).emit("user-disconnected", {
-                            message: "Your chat partner has disconnected",
-                            userId: user.userId
-                        });
-                    });
-                }
-        
-                // reset online users list
-                const onlineUsers = getUsers();
-                io.emit("get-online-users", onlineUsers);
-            } catch (error) {
-                console.error('Error in offline handler:', error);
-            }
+            // remove user from online users list
+            const user = removeUser(socket.id)
+            removeUnpairedUser(user.userId)
+            // reset online users list
+            const onlineUsers = getUsers()
+            io.emit("get-online-users", onlineUsers);
         });
 
         // socket.on("disconnect", () => {
