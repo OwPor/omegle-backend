@@ -52,10 +52,25 @@ module.exports = function (server) {
         })
 
         socket.on("chat-close", (receiver, callback) => {
-            const user = getUser(receiver)
-            io.to(user.socketId).emit("chat-close")
-            callback()
-        })
+            try {
+                const user = getUser(receiver);
+                
+                if (!user || !user.socketId) {
+                    io.to(socket.id).emit("user-disconnected", {
+                        message: "The other user has disconnected",
+                        userId: receiver
+                    });
+                    console.log(`User not found or invalid socketId for userId: ${receiver}`);
+                    return callback && callback();
+                }
+                
+                io.to(user.socketId).emit("chat-close");
+                callback && callback();
+            } catch (error) {
+                console.error('Error in chat-close handler:', error);
+                callback && callback(error);
+            }
+        });
 
         socket.on("typing", (userId) => {
             const user = getUser(userId);
@@ -84,21 +99,54 @@ module.exports = function (server) {
         });
 
         socket.on("screen-off", () => {
-            // remove user from online users list
-            const user = removeUser(socket.id)
-            removeUnpairedUser(user.userId)
-            // reset online users list
-            const onlineUsers = getUsers()
-            io.emit("get-online-users", onlineUsers);
-        })
-
+            try {
+                const user = removeUser(socket.id);
+                
+                if (user) {
+                    removeUnpairedUser(user.userId);
+                    
+                    // Notify any active chat partners
+                    const onlineUsers = getUsers();
+                    onlineUsers.forEach(onlineUser => {
+                        io.to(onlineUser.socketId).emit("user-disconnected", {
+                            message: "Your chat partner has disconnected",
+                            userId: user.userId
+                        });
+                    });
+                }
+        
+                // reset online users list
+                const onlineUsers = getUsers();
+                io.emit("get-online-users", onlineUsers);
+            } catch (error) {
+                console.error('Error in screen-off handler:', error);
+            }
+        });
+        
+        // Similarly, update the "offline" event handler
         socket.on("offline", () => {
-            // remove user from online users list
-            const user = removeUser(socket.id)
-            removeUnpairedUser(user.userId)
-            // reset online users list
-            const onlineUsers = getUsers()
-            io.emit("get-online-users", onlineUsers);
+            try {
+                const user = removeUser(socket.id);
+                
+                if (user) {
+                    removeUnpairedUser(user.userId);
+                    
+                    // Notify any active chat partners
+                    const onlineUsers = getUsers();
+                    onlineUsers.forEach(onlineUser => {
+                        io.to(onlineUser.socketId).emit("user-disconnected", {
+                            message: "Your chat partner has disconnected",
+                            userId: user.userId
+                        });
+                    });
+                }
+        
+                // reset online users list
+                const onlineUsers = getUsers();
+                io.emit("get-online-users", onlineUsers);
+            } catch (error) {
+                console.error('Error in offline handler:', error);
+            }
         });
 
         // socket.on("disconnect", () => {
