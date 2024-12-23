@@ -81,14 +81,30 @@ module.exports = function (server) {
             io.emit("get-online-users", onlineUsers);
         });
 
+        // socket.on("disconnect", () => {
+        //     // remove user from online users list
+        //     const user = removeUser(socket.id)
+        //     removeUnpairedUser(user.userId)
+        //     const onlineUsers = getUsers()
+        //     // reset online users list
+        //     io.emit("get-online-users", onlineUsers);
+        //     console.log('🔥: A user disconnected')
+        // })
+
         socket.on("disconnect", () => {
-            // remove user from online users list
-            const user = removeUser(socket.id)
-            removeUnpairedUser(user.userId)
-            const onlineUsers = getUsers()
-            // reset online users list
-            io.emit("get-online-users", onlineUsers);
-            console.log('🔥: A user disconnected')
+            try {
+                const user = removeUser(socket.id)
+                
+                if (user) {
+                    removeUnpairedUser(user.userId)
+                }
+                
+                const onlineUsers = getUsers()
+                io.emit("get-online-users", onlineUsers);
+                console.log('🔥: A user disconnected')
+            } catch (error) {
+                console.error('Error in disconnect handler:', error)
+            }
         })
     });
 }
