@@ -11,8 +11,12 @@ module.exports = function (server) {
         console.log(`⚡: ${socket.id} user just connected!`)
 
         socket.on("new-online-user", (userId, callback) => {
-            const { error } = addUser(userId, socket.id)
-            if (error) return callback(error)
+            // console.log(`Adding new online user: ${userId}`);
+            const { error } = addUser(userId, socket.id);
+            if (error) {
+                // console.log(`Error adding user: ${error}`);
+                return callback(error);
+            }
             // reset online users list
             const onlineUsers = getUsers()
             io.emit("get-online-users", onlineUsers);
@@ -54,14 +58,22 @@ module.exports = function (server) {
         })
 
         socket.on("typing", (userId) => {
-            const user = getUser(userId)
-            io.to(user.socketId).emit("typing")
-        })
-
+            const user = getUser(userId);
+            if (!user || !user.socketId) {
+                console.log(`User not found or invalid socketId for userId: ${userId}`);
+                return;
+            }
+            io.to(user.socketId).emit("typing");
+        });
+        
         socket.on("typing stop", (userId) => {
-            const user = getUser(userId)
-            io.to(user.socketId).emit("typing stop")
-        })
+            const user = getUser(userId);
+            if (!user || !user.socketId) {
+                console.log(`User not found or invalid socketId for userId: ${userId}`);
+                return;
+            }
+            io.to(user.socketId).emit("typing stop");
+        });
 
         socket.on("screen-off", () => {
             // remove user from online users list
