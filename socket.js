@@ -11,112 +11,118 @@ module.exports = function (server) {
         console.log(`⚡: ${socket.id} user just connected!`)
 
         socket.on("new-online-user", (userId, callback) => {
-            // console.log(`Adding new online user: ${userId}`);
-            const { error } = addUser(userId, socket.id);
-            if (error) {
-                // console.log(`Error adding user: ${error}`);
-                return callback(error);
+            try {
+                const { error } = addUser(userId, socket.id);
+                if (error) return callback(error);
+                
+                const onlineUsers = getUsers();
+                io.emit("get-online-users", onlineUsers);
+                callback();
+            } catch (error) {
+                console.error('Error in new-online-user:', error);
+                callback('Internal server error');
             }
-            // reset online users list
-            const onlineUsers = getUsers()
-            io.emit("get-online-users", onlineUsers);
-            callback()
         });
 
         socket.on("pairing-user", (userId, callback) => {
-            const { error } = addUnpairedUser(userId)
-            if (error) return callback(error)
-            const unpairedUser = getUnpairedUsers()
-            if (unpairedUser.length < 2) return
-            const user = getUser(userId)
-            const user2 = getUser(unpairedUser[0])
-            io.to(user.socketId).emit("user-paired", user2.userId)
-            removeUnpairedUser(user2.userId)
-            io.to(user2.socketId).emit("user-paired", user.userId)
-            removeUnpairedUser(user.userId)
-        })
+            try {
+                const { error } = addUnpairedUser(userId);
+                if (error) return callback(error);
 
-        socket.on("unpairing-user", (userId, callback) => {
-            removeUnpairedUser(userId)
-            callback()
-        })
+                const unpairedUsers = getUnpairedUsers();
+                if (unpairedUsers.length < 2) return callback();
+
+                const user = getUser(userId);
+                const user2 = getUser(unpairedUsers[0]);
+
+                if (!user || !user2) return callback('Users not found');
+
+                io.to(user.socketId).emit("user-paired", user2.userId);
+                io.to(user2.socketId).emit("user-paired", user.userId);
+                
+                removeUnpairedUser(user2.userId);
+                removeUnpairedUser(user.userId);
+                callback();
+            } catch (error) {
+                console.error('Error in pairing-user:', error);
+                callback('Pairing failed');
+            }
+        });
 
         socket.on("send-message", (receiver, message, callback) => {
-            const user = getUser(receiver)
-            if (!user) {
-                return callback()
+            try {
+                const user = getUser(receiver);
+                if (!user || !user.socketId) {
+                    return callback('User not found');
+                }
+
+                io.to(user.socketId).emit("send-message", message);
+                io.to(socket.id).emit("receive-message", message);
+                callback();
+            } catch (error) {
+                console.error('Error in send-message:', error);
+                callback('Message sending failed');
             }
-            io.to(user.socketId).emit("send-message", message)
-            io.to(socket.id).emit("receive-message", message)
-            callback()
-        })
+        });
 
         socket.on("chat-close", (receiver, callback) => {
-            const user = getUser(receiver)
-            io.to(user.socketId).emit("chat-close")
-            callback()
-        })
+            try {
+                const user = getUser(receiver);
+                if (!user || !user.socketId) {
+                    return callback('User not connected');
+                }
+
+                io.to(user.socketId).emit("chat-close");
+                callback();
+            } catch (error) {
+                console.error('Error in chat-close:', error);
+                callback('Chat close failed');
+            }
+        });
 
         socket.on("typing", (userId) => {
-            const user = getUser(userId);
-            if (!user || !user.socketId) {
-                console.log(`User not found or invalid socketId for userId: ${userId}`);
-                return;
-            }
-            io.to(user.socketId).emit("typing");
-        });
-        
-        socket.on("typing stop", (userId) => {
-            const user = getUser(userId);
-            if (!user || !user.socketId) {
-                console.log(`User not found or invalid socketId for userId: ${userId}`);
-                return;
-            }
-            io.to(user.socketId).emit("typing stop");
-        });
-
-        socket.on("screen-off", () => {
-            // remove user from online users list
-            const user = removeUser(socket.id)
-            removeUnpairedUser(user.userId)
-            // reset online users list
-            const onlineUsers = getUsers()
-            io.emit("get-online-users", onlineUsers);
-        })
-
-        socket.on("offline", () => {
-            // remove user from online users list
-            const user = removeUser(socket.id)
-            removeUnpairedUser(user.userId)
-            // reset online users list
-            const onlineUsers = getUsers()
-            io.emit("get-online-users", onlineUsers);
-        });
-
-        // socket.on("disconnect", () => {
-        //     // remove user from online users list
-        //     const user = removeUser(socket.id)
-        //     removeUnpairedUser(user.userId)
-        //     const onlineUsers = getUsers()
-        //     // reset online users list
-        //     io.emit("get-online-users", onlineUsers);
-        //     console.log('🔥: A user disconnected')
-        // })
-
-        socket.on("disconnect", () => {
             try {
-                const user = removeUser(socket.id)
-                
-                if (user) {
-                    removeUnpairedUser(user.userId)
+                const user = getUser(userId);
+                if (!user || !user.socketId) {
+                    return socket.emit("typing-error", {
+                        message: "Connection interrupted. Please refresh the page."
+                    });
                 }
-                
-                const onlineUsers = getUsers()
-                io.emit("get-online-users", onlineUsers);
-                console.log('🔥: A user disconnected')
+                io.to(user.socketId).emit("typing");
             } catch (error) {
-                console.error('Error in disconnect handler:', error)
+                console.error('Error in typing:', error);
             }
-        })
+        });
+
+        socket.on("typing stop", (userId) => {
+            try {
+                const user = getUser(userId);
+                if (!user || !user.socketId) {
+                    return socket.emit("typing-error", {
+                        message: "Connection interrupted. Please refresh the page."
+                    });
+                }
+                io.to(user.socketId).emit("typing stop");
+            } catch (error) {
+                console.error('Error in typing stop:', error);
+            }
+        });
+
+        const handleUserDisconnect = () => {
+            try {
+                const user = removeUser(socket.id);
+                if (user) {
+                    removeUnpairedUser(user.userId);
+                    const onlineUsers = getUsers();
+                    io.emit("get-online-users", onlineUsers);
+                }
+            } catch (error) {
+                console.error('Error in disconnect handler:', error);
+            }
+        };
+
+        socket.on("screen-off", handleUserDisconnect);
+        socket.on("offline", handleUserDisconnect);
+        socket.on("disconnect", handleUserDisconnect);
     });
 }

@@ -1,5 +1,5 @@
 {
-  "name": "domegle-backend",
+  "name": "owmegle-server",
   "version": "1.0.0",
   "description": "This is a clone website of omegle",
   "main": "app.js",
@@ -7,9 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "omegle"
+    "omegle",
+    "owmegle"
   ],
   "author": "Shiv",
+  "modified_by": "OwPor",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",

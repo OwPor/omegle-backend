@@ -1,7 +1,7 @@
 const express = require("express")
 const cors = require("cors")
 const { createServer } = require("http")
-const socketSetup = require("./socket"); // Import the socket setup
+const socketSetup = require("./socket");
 require("dotenv").config()
 
 const app = express()
